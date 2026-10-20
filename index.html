@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Airlock — ИИ-шлюз для вашей компании</title>
+<meta name="description" content="Airlock работает в вашей сети между сотрудниками и языковой моделью: находит в запросе персональные данные и заменяет их метками до отправки провайдеру.">
+<!--
+  The page loads nothing from anywhere: no script, no style, no font, no image and no frame
+  of another site, and no request of its own. The policy below holds it to that. A change to
+  the script needs its new hash here; the test of the page prints it.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-f7oK8zOXpfh9WAA5cSe2I6L6P6bIDebjM0Z8JK7ZUws='; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b5d52'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23fff' stroke-width='3'/%3E%3Cpath d='M16 8v16' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #10151c;
+  --muted: #485264;
+  --line: #d3d9e2;
+  --accent: #0b5d52;
+  --accent-ink: #ffffff;
+  --focus: #1447c0;
+  --warn-bg: #fff3c9;
+  --warn-ink: #573a00;
+  --warn-line: #a8760b;
+  --value-bg: #fde6e1;
+  --value-ink: #8a1c0b;
+  --token-bg: #dff0ec;
+  --token-ink: #0a4a41;
+  --bar-other: #5f6b7e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161c25;
+    --ink: #e8ecf1;
+    --muted: #a9b3c1;
+    --line: #2e3745;
+    --accent: #62d5bf;
+    --accent-ink: #05231f;
+    --focus: #9dbdff;
+    --warn-bg: #3a2e06;
+    --warn-ink: #ffe59a;
+    --warn-line: #b48a22;
+    --value-bg: #44191a;
+    --value-ink: #ffb9ad;
+    --token-bg: #11312c;
+    --token-ink: #93e6d5;
+    --bar-other: #7c8799;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 1.0625rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+}
+.wrap { max-width: 70rem; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 2rem); }
+h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
+h1 { font-size: clamp(1.9rem, 2.4vw + 1.1rem, 2.6rem); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 1.25rem; max-width: 22em; }
+h2 { font-size: clamp(1.45rem, 1.6vw + 1rem, 2rem); letter-spacing: -0.01em; margin: 0 0 1rem; }
+h3 { font-size: 1.1rem; margin: 0 0 0.35rem; }
+p { margin: 0 0 1rem; max-width: 46rem; }
+a { color: var(--accent); text-underline-offset: 0.16em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+
+/* One language at a time. Russian shows by default; a checked radio button shows another,
+   and so does the script, through the language of the document, where :has() is not known.
+   An element with data-l is only ever a wrapper: its layout belongs to what is inside it. */
+[data-l="kk"], [data-l="en"] { display: none; }
+html:has(#lang-kk:checked) [data-l="ru"], html:has(#lang-en:checked) [data-l="ru"] { display: none; }
+html:has(#lang-kk:checked) [data-l="kk"], html:has(#lang-en:checked) [data-l="en"] { display: revert; }
+html[lang="kk"] [data-l="ru"], html[lang="en"] [data-l="ru"] { display: none; }
+html[lang="kk"] [data-l="kk"], html[lang="en"] [data-l="en"] { display: revert; }
+
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip { position: absolute; left: 1rem; top: -5rem; z-index: 10; background: var(--surface); color: var(--ink); padding: 0.6rem 1rem; border-radius: 0.5rem; }
+.skip:focus { top: 1rem; }
+
+/* Header */
+.top { background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; padding-block: 0.9rem; }
+.brand { display: flex; align-items: center; gap: 0.7rem; margin: 0; }
+.brand svg { width: 2.4rem; height: 2.4rem; flex: none; }
+.brand rect { fill: var(--accent); }
+.brand circle, .brand path { fill: none; stroke: var(--accent-ink); stroke-width: 3; }
+.brand .name { display: flex; flex-direction: column; }
+.brand b { font-size: 1.35rem; line-height: 1.15; letter-spacing: -0.01em; }
+.brand .desc { color: var(--muted); font-size: 0.875rem; line-height: 1.3; }
+.langs { border: 0; margin: 0; padding: 0; min-width: 0; }
+.langs div { display: flex; gap: 0.2rem; padding: 0.2rem; background: var(--bg); border: 1px solid var(--line); border-radius: 0.7rem; }
+.langs label { cursor: pointer; position: relative; }
+.langs input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.langs span { display: block; padding: 0.6rem 0.8rem; border-radius: 0.5rem; font-size: 0.92rem; line-height: 1.5rem; }
+.langs input:checked + span { background: var(--accent); color: var(--accent-ink); font-weight: 650; }
+.langs input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.top nav { flex-basis: 100%; }
+.top nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.1rem 1.25rem; font-size: 0.95rem; }
+.top nav a { display: inline-block; padding-block: 0.55rem; }
+
+/* Sections */
+section { padding-block: clamp(2.25rem, 6vw, 4rem); }
+section + section { border-top: 1px solid var(--line); }
+.hero { padding-block: clamp(2.5rem, 8vw, 5.5rem) clamp(2.25rem, 6vw, 4rem); }
+.lead { font-size: clamp(1.12rem, 0.6vw + 1rem, 1.3rem); }
+.status, .note { color: var(--muted); }
+.nw { white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 1rem 1.25rem; margin-block: 1.5rem 1rem; max-width: none; }
+.cta { display: flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; padding: 0.65rem 1.3rem; border: 2px solid var(--accent); border-radius: 0.65rem; font-weight: 650; text-decoration: none; color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn:hover { text-decoration: underline; }
+
+/* What is not final yet: a placeholder, or a claim that waits for its source. */
+.ph { background: var(--warn-bg); color: var(--warn-ink); border: 1px dashed var(--warn-line); border-radius: 0.3rem; padding: 0.05rem 0.4rem; font: 600 0.8125rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.ph-box { background: var(--warn-bg); color: var(--warn-ink); border: 2px dashed var(--warn-line); border-radius: 0.8rem; padding: 1rem 1.2rem; }
+.ph-box .ph { border-style: solid; }
+/* The demo waits for its video and is hidden until it is in. Delete this rule then. */
+#ru-demo, #kk-demo, #en-demo { display: none; }
+.video { aspect-ratio: 16 / 9; max-width: 52rem; display: grid; place-content: center; justify-items: center; gap: 0.5rem; text-align: center; }
+
+/* How it works */
+.steps { list-style: none; margin: 1.5rem 0 1rem; padding: 0; display: grid; gap: 2.25rem; }
+.step { position: relative; background: var(--surface); border: 2px solid var(--accent); border-radius: 1rem; padding: 1.1rem 1.2rem 1.2rem; }
+.step.outside { border-style: dashed; border-color: var(--muted); }
+.step + .step::before { content: ""; position: absolute; top: -1.6rem; left: 50%; margin-left: -0.7rem; border: 0.7rem solid transparent; border-top-color: var(--muted); border-bottom-width: 0; }
+.zone { margin: 0 0 0.35rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.outside .zone { color: var(--muted); }
+.step h3 { font-size: 1.25rem; }
+.who { margin: 1rem 0 0.3rem; font-size: 0.82rem; font-weight: 650; color: var(--muted); }
+.sample { margin: 0; padding: 0.75rem 0.85rem; background: var(--bg); border-radius: 0.6rem; font-size: 0.95rem; overflow-wrap: anywhere; }
+.v { background: var(--value-bg); color: var(--value-ink); border-radius: 0.25rem; padding: 0 0.2rem; }
+/* A value is one piece: a name of two words and an account in groups of four go to the next
+   line whole, with the comma after them. Not on the narrowest screens, where a line can be
+   shorter than the account. */
+@media (min-width: 22.5rem) { .v { white-space: nowrap; } }
+.t { background: var(--token-bg); color: var(--token-ink); border-radius: 0.25rem; padding: 0 0.25rem; }
+.secrets { margin-top: 2.25rem; }
+.blocked { margin: 0; max-width: 46rem; padding: 0.9rem 1.1rem; background: var(--surface); border: 1px solid var(--line); border-left: 0.3rem solid var(--muted); border-radius: 0.5rem; }
+.peek { display: none; background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: 0.4rem 1.2rem 1.2rem; }
+.peek .sample + .who { position: relative; margin-top: 2.6rem; }
+.peek .sample + .who::before { content: ""; position: absolute; top: -1.75rem; left: 1rem; border: 0.6rem solid transparent; border-top-color: var(--muted); border-bottom-width: 0; }
+@media (min-width: 60rem) {
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 3rem; align-items: center; }
+  .peek { display: block; }
+  .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; }
+  .step + .step::before { top: 50%; left: -1.6rem; margin: -0.7rem 0 0; border: 0.7rem solid transparent; border-left-color: var(--muted); border-right-width: 0; }
+}
+
+/* Cards */
+.cards { list-style: none; margin: 1.5rem 0; padding: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
+.cards li, .metric { background: var(--surface); border: 1px solid var(--line); border-radius: 0.85rem; padding: 1rem 1.15rem; }
+.cards p { margin: 0; color: var(--muted); font-size: 0.97rem; }
+.cards p.caveat { margin-top: 0.85rem; font-size: 0.93rem; }
+
+/* Benchmark */
+.metrics { display: grid; gap: 1rem; margin-block: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+.metric .n { margin: 0 0 0.9rem; color: var(--muted); font-size: 0.9rem; }
+.metric dl { margin: 0; display: grid; gap: 0.6rem; }
+.metric dt { font-size: 0.92rem; }
+.metric dd { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) 3.6rem; align-items: center; gap: 0.75rem; font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }
+.metric dd::before { content: ""; height: 0.6rem; border-radius: 1rem; background: linear-gradient(to right, var(--fill, var(--bar-other)) calc(var(--v) * 100%), var(--line) 0); }
+.metric .own { --fill: var(--accent); }
+.caveat { margin: 1rem 0 0; padding-top: 0.85rem; border-top: 1px dashed var(--line); font-size: 0.93rem; color: var(--muted); }
+.caveat strong { color: var(--ink); }
+
+footer { border-top: 1px solid var(--line); padding-block: 2rem 3rem; color: var(--muted); font-size: 0.95rem; }
+footer p { margin-bottom: 0.6rem; }
+</style>
+</head>
+<body>
+<a class="skip" data-l="ru" lang="ru" href="#main">Перейти к содержанию</a>
+<a class="skip" data-l="kk" lang="kk" href="#main">Мазмұнға өту</a>
+<a class="skip" data-l="en" lang="en" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <p class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="7"/><circle cx="16" cy="16" r="8"/><path d="M16 8v16"/></svg>
+      <span class="name">
+        <b>Airlock</b>
+        <span class="desc" data-l="ru" lang="ru">ИИ-шлюз для вашей компании</span>
+        <span class="desc" data-l="kk" lang="kk">Компанияңызға арналған ЖИ-шлюз</span>
+        <span class="desc" data-l="en" lang="en">A secure gateway between your team and AI</span>
+      </span>
+    </p>
+    <fieldset class="langs">
+      <legend class="vh">Язык · Тіл · Language</legend>
+      <div>
+        <label><input type="radio" name="lang" id="lang-ru" value="ru" checked><span lang="ru">Русский</span></label>
+        <label><input type="radio" name="lang" id="lang-kk" value="kk"><span lang="kk">Қазақша</span></label>
+        <label><input type="radio" name="lang" id="lang-en" value="en"><span lang="en">English</span></label>
+      </div>
+    </fieldset>
+    <nav data-l="ru" lang="ru" aria-label="Разделы страницы">
+      <ul>
+        <li><a href="#ru-how">Как работает</a></li>
+        <li><a href="#ru-detects">Что находит</a></li>
+        <li><a href="#ru-deploy">Развёртывание</a></li>
+        <li><a href="#ru-bench">Бенчмарк</a></li>
+        <li><a href="#ru-pilot">Пилот</a></li>
+      </ul>
+    </nav>
+    <nav data-l="kk" lang="kk" aria-label="Беттің бөлімдері">
+      <ul>
+        <li><a href="#kk-how">Қалай жұмыс істейді</a></li>
+        <li><a href="#kk-detects">Не табады</a></li>
+        <li><a href="#kk-deploy">Орнату</a></li>
+        <li><a href="#kk-bench">Бенчмарк</a></li>
+        <li><a href="#kk-pilot">Пилот</a></li>
+      </ul>
+    </nav>
+    <nav data-l="en" lang="en" aria-label="Sections of the page">
+      <ul>
+        <li><a href="#en-how">How it works</a></li>
+        <li><a href="#en-detects">What it detects</a></li>
+        <li><a href="#en-deploy">Deployment</a></li>
+        <li><a href="#en-bench">Benchmark</a></li>
+        <li><a href="#en-pilot">Pilot</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div data-l="ru" lang="ru">
+    <section class="hero" aria-labelledby="ru-h1">
+      <div class="wrap">
+        <div class="pitch">
+          <h1 id="ru-h1">Используйте ChatGPT и Claude на реальной работе&nbsp;— данные клиентов заменяются метками до отправки</h1>
+          <p class="lead">Airlock работает в вашей сети, между сотрудниками и языковой моделью. Он находит в запросе персональные данные, заменяет их метками и только потом отправляет текст провайдеру. В ответе значения возвращаются на место.</p>
+          <p class="status">Это ранняя версия. Что Airlock находит и что пропускает, <a href="#ru-bench">показано ниже в цифрах</a>.</p>
+          <p class="actions">
+            <span class="cta"><a class="btn primary" href="mailto:hello@airlockteam.com?subject=%D0%9F%D0%B8%D0%BB%D0%BE%D1%82%20Airlock">Стать партнёром пилота (3 места)</a></span>
+          </p>
+        </div>
+        <!-- The first two steps of "how it works" once more, for the eye, on a wide screen only. -->
+        <div class="peek" aria-hidden="true">
+          <p class="who">Сотрудник пишет</p>
+          <p class="sample">Составь вежливый отказ по кредиту. Клиент: <mark class="v">Нұргүл Ермекова</mark>, ИИН <mark class="v">539212232138</mark>, счёт <mark class="v">KZ60 9999 1585 882B 2215</mark>.</p>
+          <p class="who">Провайдер видит</p>
+          <p class="sample">Составь вежливый отказ по кредиту. Клиент: <code class="t">[PERSON_1]</code>, ИИН <code class="t">[IIN_1]</code>, счёт <code class="t">[KZ_IBAN_1]</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="ru-problem" aria-labelledby="ru-problem-h">
+      <div class="wrap">
+        <h2 id="ru-problem-h">Проблема</h2>
+        <p>Сотруднику проще вставить письмо клиента в чат с моделью, чем вычищать из него имена и номера. В письме — ФИО, ИИН, номер счёта. Через секунду они на чужих серверах.</p>
+        <p>Запрет не отвечает на вопрос, как сделать ту же работу без модели.</p>
+        <p>Передачу персональных данных за рубеж ограничивает статья 16 <a href="https://adilet.zan.kz/rus/docs/Z1300000094">Закона Республики Казахстан «О персональных данных и их защите»</a> от 21 мая 2013 года № 94-V.</p>
+      </div>
+    </section>
+
+    <section id="ru-how" aria-labelledby="ru-how-h">
+      <div class="wrap">
+        <h2 id="ru-how-h">Как это работает</h2>
+        <ol class="steps">
+          <li class="step inside">
+            <p class="zone">В вашей сети</p>
+            <h3>Маскирование</h3>
+            <p>Шлюз находит значения и ставит вместо них метки. Одно значение — одна метка, сколько бы раз оно ни встретилось.</p>
+            <p class="who">Сотрудник пишет</p>
+            <p class="sample">Составь вежливый отказ по кредиту. Клиент: <mark class="v">Нұргүл Ермекова</mark>, ИИН <mark class="v">539212232138</mark>, счёт <mark class="v">KZ60 9999 1585 882B 2215</mark>.</p>
+          </li>
+          <li class="step outside">
+            <p class="zone">У провайдера модели</p>
+            <h3>Модель</h3>
+            <p>Провайдер получает текст с метками и отвечает текстом с метками.</p>
+            <p class="who">Провайдер видит</p>
+            <p class="sample">Составь вежливый отказ по кредиту. Клиент: <code class="t">[PERSON_1]</code>, ИИН <code class="t">[IIN_1]</code>, счёт <code class="t">[KZ_IBAN_1]</code>.</p>
+          </li>
+          <li class="step inside">
+            <p class="zone">В вашей сети</p>
+            <h3>Восстановление</h3>
+            <p>Шлюз возвращает значения на место. Внутри ссылки метка остаётся меткой.</p>
+            <p class="who">Сотрудник читает</p>
+            <p class="sample">Уважаемая <mark class="v">Нұргүл Ермекова</mark>, к сожалению, банк не может одобрить вашу заявку на кредит.</p>
+          </li>
+        </ol>
+        <p class="note">Все значения в примерах синтетические.</p>
+        <div class="secrets">
+          <h3>Секреты не маскируются, а останавливают запрос</h3>
+          <p>Ключ API, токен, пароль, приватный ключ, строка подключения к базе данных: запрос с ними не отправляется провайдеру вовсе. Сотрудник видит сообщение:</p>
+          <blockquote class="blocked">Запрос заблокирован: в нём найдены секреты (ключи, пароли, токены). Удалите их из сообщения или начните новый чат.</blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section id="ru-detects" aria-labelledby="ru-detects-h">
+      <div class="wrap">
+        <h2 id="ru-detects-h">Что находит Airlock</h2>
+        <ul class="cards">
+          <li>
+            <h3>ИИН и БИН</h3>
+            <p>Двенадцать цифр с контрольным разрядом. Учитываются слова рядом: «ИИН», «ЖСН», «БИН», «БСН».</p>
+          </li>
+          <li>
+            <h3>IBAN Казахстана</h3>
+            <p>KZ и ещё 18 знаков, проверка по ISO 13616. Находится и в записи группами по четыре.</p>
+          </li>
+          <li>
+            <h3>Банковские карты</h3>
+            <p>От 13 до 19 цифр, проверка алгоритмом Луна. С пробелами и дефисами тоже.</p>
+          </li>
+          <li>
+            <h3>Телефоны +7</h3>
+            <p>В привычных записях: <span class="nw">+7 (7xx) xxx-xx-xx</span>, <span class="nw">87xxxxxxxxx</span>.</p>
+          </li>
+          <li>
+            <h3>Электронная почта</h3>
+            <p>Адреса в любом домене.</p>
+          </li>
+          <li>
+            <h3>Имена</h3>
+            <p>На русском и казахском: по словарям имён, по окончаниям фамилий и отчеств, по словам рядом. Это самый трудный тип: цифры ниже.</p>
+          </li>
+          <li>
+            <h3>Секреты</h3>
+            <p>Ключи API, токены, пароли, приватные ключи, строки подключения. Запрос с секретом блокируется целиком.</p>
+          </li>
+        </ul>
+        <p class="note">Пока не находит: почтовые адреса, номера документов, даты рождения.</p>
+        <p>Детектор — открытая библиотека <a href="https://github.com/airlockteam/airlock-pii">airlock-pii</a> (Apache-2.0): её правила можно прочитать, а бенчмарк — запустить самим.</p>
+      </div>
+    </section>
+
+    <section id="ru-deploy" aria-labelledby="ru-deploy-h">
+      <div class="wrap">
+        <h2 id="ru-deploy-h">Развёртывание</h2>
+        <ul class="cards">
+          <li>
+            <h3>В вашей сети</h3>
+            <p>Docker Compose на вашем сервере: чат, шлюз и база данных. К провайдеру модели обращается только шлюз. Чат и его база выхода в интернет не имеют, и это проверяется отдельной командой.</p>
+          </li>
+          <li>
+            <h3>Ваши ключи API</h3>
+            <p>OpenAI, Anthropic или любой сервис с OpenAI-совместимым API. Ключи остаются на вашем сервере.</p>
+          </li>
+          <li>
+            <h3>Политика в одном файле</h3>
+            <p>Для каждого типа данных вы выбираете: замаскировать, заблокировать запрос или пропустить как есть.</p>
+          </li>
+          <li data-card="audit">
+            <h3>Журнал аудита</h3>
+            <p>Каждый запрос, принятый шлюзом в обработку, оставляет запись: кто, когда, к какой модели, что сделано и сколько значений какого типа найдено. По умолчанию в записи нет ни значений, ни текста запроса. Записи связаны в цепочку HMAC с ключом шлюза: проверка находит запись, которую изменили или удалили без ключа.</p>
+            <p class="caveat"><strong>Оговорка.</strong> Удаления самых новых записей проверка не видит: цепочка, которая кончается раньше, остаётся цепочкой. Если включить сохранение замаскированного текста, в записи окажется и то, что детектор пропустил.</p>
+          </li>
+          <li>
+            <h3>Что остаётся у вас</h3>
+            <p>Переписка сотрудников с настоящими значениями хранится в базе чата в вашей сети, в открытом виде. Доступ к серверу и шифрование диска — ваша зона ответственности.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="ru-bench" aria-labelledby="ru-bench-h" data-source="2026-10-18_compare.md">
+      <div class="wrap">
+        <h2 id="ru-bench-h">Бенчмарк: что находит и что пропускает</h2>
+        <p>Детектор проверен на 2000 синтетических текстов; в 400 из них искать нечего. Цифра — доля значений, которые метка закрыла бы целиком. Прогон 18 октября 2026 года, airlock-pii 0.1.0 и Presidio 2.2.364; файл результатов — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md"><code>bench/results/2026-10-18_compare.md</code></a>. Как устроены данные и подсчёт, описано в <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">методике</a>.</p>
+        <p data-gateway-default="airlock_pii_ner">Шлюз по умолчанию работает с русским NER: это вторая строка в каждой карточке. Его можно отключить одной настройкой, и тогда шлюз работает на одних правилах: это первая строка.</p>
+        <div class="metrics">
+          <div class="metric" data-row="All types, under a span of any type">
+            <h3>Все типы данных</h3>
+            <p class="n">значений: 3451</p>
+            <dl>
+              <div>
+                <dt>Airlock с выключенным NER</dt>
+                <dd data-col="airlock_pii" style="--v:0.922">0,922</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock по умолчанию: правила и русский NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.943">0,943</dd>
+              </div>
+              <div>
+                <dt>Presidio без настройки</dt>
+                <dd data-col="presidio_default" style="--v:0.680">0,680</dd>
+              </div>
+              <div>
+                <dt>Presidio с русской моделью</dt>
+                <dd data-col="presidio_ru" style="--v:0.482">0,482</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Оговорка.</strong> По номерам, почте и секретам результат круговой: значения для теста и проверки, которые их ищут, взяты из одной библиотеки. Presidio под Казахстан не настраивали: типов для ИИН, БИН и секретов у него нет, поэтому ему засчитано всё, что он закрыл меткой любого типа.</p>
+          </div>
+          <div class="metric" data-row="PERSON as typed: names the library has on no list">
+            <h3>Имена, которых нет в словарях библиотеки</h3>
+            <p class="n">значений: 181</p>
+            <dl>
+              <div>
+                <dt>Airlock с выключенным NER</dt>
+                <dd data-col="airlock_pii" style="--v:0.508">0,508</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock по умолчанию: правила и русский NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.829">0,829</dd>
+              </div>
+              <div>
+                <dt>Presidio без настройки</dt>
+                <dd data-col="presidio_default" style="--v:0.591">0,591</dd>
+              </div>
+              <div>
+                <dt>Presidio с русской моделью</dt>
+                <dd data-col="presidio_ru" style="--v:0.652">0,652</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Оговорка.</strong> Единственная строка по именам, где библиотеку не проверяют по её собственным словарям. По умолчанию, с NER, у Airlock здесь 0,829: больше, чем у обоих вариантов Presidio (0,591 и 0,652). С выключенным NER — 0,508, половина: меньше, чем у обоих.</p>
+          </div>
+          <div class="metric" data-row="OCR-like noise: values it touched">
+            <h3>Значения, которые задел шум распознавания</h3>
+            <p class="n">значений: 161</p>
+            <dl>
+              <div>
+                <dt>Airlock с выключенным NER</dt>
+                <dd data-col="airlock_pii" style="--v:0.180">0,180</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock по умолчанию: правила и русский NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.180">0,180</dd>
+              </div>
+              <div>
+                <dt>Presidio без настройки</dt>
+                <dd data-col="presidio_default" style="--v:0.099">0,099</dd>
+              </div>
+              <div>
+                <dt>Presidio с русской моделью</dt>
+                <dd data-col="presidio_ru" style="--v:0.093">0,093</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Оговорка.</strong> Как после распознавания скана: ноль и буква O, единица и буква l перепутаны, один пробел сломан. С этим не справляется ни один детектор: Airlock находит меньше одного значения из пяти.</p>
+          </div>
+          <div class="metric" data-row="As typed: Kazakh in Latin letters">
+            <h3>Казахский текст латиницей</h3>
+            <p class="n">значений: 266</p>
+            <dl>
+              <div>
+                <dt>Airlock с выключенным NER</dt>
+                <dd data-col="airlock_pii" style="--v:0.966">0,966</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock по умолчанию: правила и русский NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.966">0,966</dd>
+              </div>
+              <div>
+                <dt>Presidio без настройки</dt>
+                <dd data-col="presidio_default" style="--v:0.500">0,500</dd>
+              </div>
+              <div>
+                <dt>Presidio с русской моделью</dt>
+                <dd data-col="presidio_ru" style="--v:0.248">0,248</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Оговорка.</strong> Эта цифра льстит. Тексты для теста писал автор правил, и носитель языка их не проверял. Слов «parol» и «dangyly» библиотека пока не знает: пароль после первого она пропускает, а в названии проспекта видит имя человека.</p>
+          </div>
+          <div class="metric" data-row="Negatives with a false positive">
+            <h3>Ложные срабатывания</h3>
+            <p class="n">текстов без данных: 400; меньше — лучше</p>
+            <dl>
+              <div>
+                <dt>Airlock с выключенным NER</dt>
+                <dd data-col="airlock_pii" style="--v:0.012">1,2%</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock по умолчанию: правила и русский NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.022">2,2%</dd>
+              </div>
+              <div>
+                <dt>Presidio без настройки</dt>
+                <dd data-col="presidio_default" style="--v:0.605">60,5%</dd>
+              </div>
+              <div>
+                <dt>Presidio с русской моделью</dt>
+                <dd data-col="presidio_ru" style="--v:0.385">38,5%</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Оговорка.</strong> Доля текстов без данных, в которых детектор всё же нашёл что-то из этих типов. Это тоже шаблоны того же автора: двенадцать цифр без слова «ИИН», номера заказов, улицы в честь людей.</p>
+          </div>
+        </div>
+        <p>Полные таблицы со всеми типами, срезами и оговорками — в <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md">файле результатов</a>. Пятый детектор оттуда, набор регулярных выражений без проверок, здесь не показан.</p>
+      </div>
+    </section>
+
+    <section id="ru-demo" aria-labelledby="ru-demo-h">
+      <div class="wrap">
+        <h2 id="ru-demo-h">Демо</h2>
+        <p class="ph-box video">Здесь будет двухминутное демо.</p>
+      </div>
+    </section>
+
+    <section id="ru-pilot" aria-labelledby="ru-pilot-h">
+      <div class="wrap">
+        <h2 id="ru-pilot-h">Пилот</h2>
+        <p>Ищем трёх партнёров пилота: компании, которые хотят дать сотрудникам языковые модели и не выпускать персональные данные за пределы своей сети.</p>
+        <p class="actions">
+          <span class="cta"><a class="btn primary" href="mailto:hello@airlockteam.com?subject=%D0%9F%D0%B8%D0%BB%D0%BE%D1%82%20Airlock">Стать партнёром пилота (3 места)</a></span>
+        </p>
+        <p class="note">Кнопка открывает письмо на hello@airlockteam.com в вашей почтовой программе.</p>
+      </div>
+    </section>
+  </div>
+
+  <div data-l="kk" lang="kk">
+    <section class="hero" aria-labelledby="kk-h1">
+      <div class="wrap">
+        <div class="pitch">
+          <h1 id="kk-h1">ChatGPT және Claude модельдерін нақты жұмыста қолданыңыз&nbsp;— клиенттердің деректері жіберілмес бұрын белгілермен алмастырылады</h1>
+          <p class="lead">Airlock сіздің желіңізде, қызметкерлер мен тілдік модельдің арасында жұмыс істейді. Ол сұраныстағы дербес деректерді тауып, оларды белгілермен алмастырады, содан кейін ғана мәтінді провайдерге жібереді. Жауапта мәндер өз орнына қайтарылады.</p>
+          <p class="status">Бұл — ерте нұсқа. Airlock нені табатыны және нені өткізіп алатыны <a href="#kk-bench">төменде сандармен көрсетілген</a>.</p>
+          <p class="actions">
+            <span class="cta"><a class="btn primary" href="mailto:hello@airlockteam.com?subject=Airlock%20%D0%BF%D0%B8%D0%BB%D0%BE%D1%82%D1%8B">Пилот серіктесі болу (3 орын)</a></span>
+          </p>
+        </div>
+        <!-- The first two steps of "how it works" once more, for the eye, on a wide screen only. -->
+        <div class="peek" aria-hidden="true">
+          <p class="who">Қызметкер жазады</p>
+          <p class="sample">Несие бойынша сыпайы бас тарту хатын жаз. Клиент: <mark class="v">Нұргүл Ермекова</mark>, ЖСН <mark class="v">539212232138</mark>, есепшот <mark class="v">KZ60 9999 1585 882B 2215</mark>.</p>
+          <p class="who">Провайдер көреді</p>
+          <p class="sample">Несие бойынша сыпайы бас тарту хатын жаз. Клиент: <code class="t">[PERSON_1]</code>, ЖСН <code class="t">[IIN_1]</code>, есепшот <code class="t">[KZ_IBAN_1]</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="kk-problem" aria-labelledby="kk-problem-h">
+      <div class="wrap">
+        <h2 id="kk-problem-h">Мәселе</h2>
+        <p>Қызметкерге клиенттің хатын модельмен чатқа сол күйінде қоя салу оңайырақ: есімдер мен нөмірлерді қолмен өшіріп шығуға уақыт кетеді. Хатта — аты-жөні, ЖСН, есепшот нөмірі. Бір секундтан кейін олар бөтен серверлерде болады.</p>
+        <p>Тыйым салу сол жұмысты модельсіз қалай істеуге болатынын айтпайды.</p>
+        <p>Дербес деректерді шетелге беруді <a href="https://adilet.zan.kz/kaz/docs/Z1300000094">«Дербес деректер және оларды қорғау туралы» 2013 жылғы 21 мамырдағы № 94-V Қазақстан Республикасы Заңының</a> 16-бабы шектейді.</p>
+      </div>
+    </section>
+
+    <section id="kk-how" aria-labelledby="kk-how-h">
+      <div class="wrap">
+        <h2 id="kk-how-h">Бұл қалай жұмыс істейді</h2>
+        <ol class="steps">
+          <li class="step inside">
+            <p class="zone">Сіздің желіңізде</p>
+            <h3>Жасыру</h3>
+            <p>Шлюз мәндерді тауып, орнына белгілер қояды. Бір мән — бір белгі, ол неше рет кездессе де.</p>
+            <p class="who">Қызметкер жазады</p>
+            <p class="sample">Несие бойынша сыпайы бас тарту хатын жаз. Клиент: <mark class="v">Нұргүл Ермекова</mark>, ЖСН <mark class="v">539212232138</mark>, есепшот <mark class="v">KZ60 9999 1585 882B 2215</mark>.</p>
+          </li>
+          <li class="step outside">
+            <p class="zone">Модель провайдерінде</p>
+            <h3>Модель</h3>
+            <p>Провайдер белгілері бар мәтінді алады және белгілері бар мәтінмен жауап береді.</p>
+            <p class="who">Провайдер көреді</p>
+            <p class="sample">Несие бойынша сыпайы бас тарту хатын жаз. Клиент: <code class="t">[PERSON_1]</code>, ЖСН <code class="t">[IIN_1]</code>, есепшот <code class="t">[KZ_IBAN_1]</code>.</p>
+          </li>
+          <li class="step inside">
+            <p class="zone">Сіздің желіңізде</p>
+            <h3>Қалпына келтіру</h3>
+            <p>Шлюз мәндерді орнына қайтарады. Сілтеме ішіндегі белгі сол күйінде қалады.</p>
+            <p class="who">Қызметкер оқиды</p>
+            <p class="sample">Құрметті <mark class="v">Нұргүл Ермекова</mark>, өкінішке қарай, банк несие алуға берген өтінішіңізді мақұлдай алмайды.</p>
+          </li>
+        </ol>
+        <p class="note">Мысалдардағы барлық мәндер синтетикалық.</p>
+        <div class="secrets">
+          <h3>Құпия деректер жасырылмайды, сұранысты тоқтатады</h3>
+          <p>API кілті, токен, құпиясөз, жеке кілт, дерекқорға қосылу жолы: бұлар бар сұраныс провайдерге мүлдем жіберілмейді. Қызметкер мына хабарламаны көреді:</p>
+          <blockquote class="blocked">Сұраныс бұғатталды: ішінде құпия деректер (кілттер, құпиясөздер, токендер) табылды. Оларды хабарламадан өшіріңіз немесе жаңа чат бастаңыз.</blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section id="kk-detects" aria-labelledby="kk-detects-h">
+      <div class="wrap">
+        <h2 id="kk-detects-h">Airlock не табады</h2>
+        <ul class="cards">
+          <li>
+            <h3>ЖСН және БСН</h3>
+            <p>Бақылау разряды бар он екі цифр. Жанындағы сөздер де ескеріледі: «ЖСН», «ИИН», «БСН», «БИН».</p>
+          </li>
+          <li>
+            <h3>Қазақстандық IBAN</h3>
+            <p>KZ және тағы 18 таңба, ISO 13616 бойынша тексеріледі. Төрт-төрттен топтап жазылғаны да табылады.</p>
+          </li>
+          <li>
+            <h3>Банк карталары</h3>
+            <p>13-тен 19-ға дейін цифр, Лун алгоритмімен тексеріледі. Бос орынмен немесе сызықшамен жазылғаны да.</p>
+          </li>
+          <li>
+            <h3>+7 телефон нөмірлері</h3>
+            <p>Үйреншікті жазылу түрлерінде: <span class="nw">+7 (7xx) xxx-xx-xx</span>, <span class="nw">87xxxxxxxxx</span>.</p>
+          </li>
+          <li>
+            <h3>Электрондық пошта</h3>
+            <p>Кез келген домендегі мекенжайлар.</p>
+          </li>
+          <li>
+            <h3>Аты-жөндер</h3>
+            <p>Орыс және қазақ тілдерінде: есімдер сөздігі, тек пен әкесінің аты жалғаулары және жанындағы сөздер бойынша. Бұл — ең қиын түрі: сандар төменде.</p>
+          </li>
+          <li>
+            <h3>Құпия деректер</h3>
+            <p>API кілттері, токендер, құпиясөздер, жеке кілттер, қосылу жолдары. Құпия дерек бар сұраныс толығымен бұғатталады.</p>
+          </li>
+        </ul>
+        <p class="note">Әзірге таппайды: пошталық мекенжайлар, құжат нөмірлері, туған күндер.</p>
+        <p>Детектор — ашық кітапхана <a href="https://github.com/airlockteam/airlock-pii">airlock-pii</a> (Apache-2.0): оның ережелерін оқуға, ал бенчмаркты өзіңіз іске қосуға болады.</p>
+      </div>
+    </section>
+
+    <section id="kk-deploy" aria-labelledby="kk-deploy-h">
+      <div class="wrap">
+        <h2 id="kk-deploy-h">Орнату</h2>
+        <ul class="cards">
+          <li>
+            <h3>Сіздің желіңізде</h3>
+            <p>Сіздің серверіңіздегі Docker Compose: чат, шлюз және дерекқор. Модель провайдеріне тек шлюз ғана шығады. Чат пен оның дерекқорының интернетке шығуы жабық, бұл жеке командамен тексеріледі.</p>
+          </li>
+          <li>
+            <h3>Өз API кілттеріңіз</h3>
+            <p>OpenAI, Anthropic немесе OpenAI-мен үйлесімді API-і бар кез келген қызмет. Кілттер сіздің серверіңізде қалады.</p>
+          </li>
+          <li>
+            <h3>Саясат бір файлда</h3>
+            <p>Деректердің әр түрі үшін өзіңіз таңдайсыз: жасыру, сұранысты бұғаттау немесе сол күйінде өткізу.</p>
+          </li>
+          <li data-card="audit">
+            <h3>Аудит журналы</h3>
+            <p>Шлюз өңдеуге қабылдаған әр сұраныс бір жазба қалдырады: кім, қашан, қай модельге, не істелді және қай түрден қанша мән табылды. Әдепкі күйде жазбада мәндер де, сұраныс мәтіні де жоқ. Жазбалар шлюз кілтімен есептелетін HMAC тізбегімен байланысқан: кілтсіз өзгертілген немесе өшірілген жазбаны тексеру табады.</p>
+            <p class="caveat"><strong>Ескертпе.</strong> Ең соңғы жазбалардың өшірілгенін тексеру көрмейді: ертерек аяқталатын тізбек те тізбек болып қала береді. Жасырылған мәтінді сақтауды қоссаңыз, детектор өткізіп алған мәндер де жазбаға түседі.</p>
+          </li>
+          <li>
+            <h3>Сізде не қалады</h3>
+            <p>Қызметкерлердің нақты мәндері бар хат алмасуы сіздің желіңіздегі чат дерекқорында ашық түрде сақталады. Серверге қолжетімділік пен дискіні шифрлау — сіздің жауапкершілігіңізде.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="kk-bench" aria-labelledby="kk-bench-h" data-source="2026-10-18_compare.md">
+      <div class="wrap">
+        <h2 id="kk-bench-h">Бенчмарк: нені табады, нені өткізіп алады</h2>
+        <p>Детектор 2000 синтетикалық мәтінде тексерілді; оның 400-інде іздейтін ештеңе жоқ. Көрсеткіш — белгі толық жабатын мәндердің үлесі. Сынақ 2026 жылғы 18 қазанда өткізілді, airlock-pii 0.1.0 және Presidio 2.2.364; нәтижелер файлы — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md"><code>bench/results/2026-10-18_compare.md</code></a>. Деректер мен есептеу тәсілі <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">әдістемеде</a> сипатталған.</p>
+        <p data-gateway-default="airlock_pii_ner">Шлюз әдепкі бойынша орыс тілді NER-мен жұмыс істейді: бұл әр карточкадағы екінші жол. Оны бір баптаумен өшіруге болады, сонда шлюз тек ережелермен жұмыс істейді: бұл бірінші жол.</p>
+        <div class="metrics">
+          <div class="metric" data-row="All types, under a span of any type">
+            <h3>Деректердің барлық түрі</h3>
+            <p class="n">мән саны: 3451</p>
+            <dl>
+              <div>
+                <dt>NER өшірілген Airlock</dt>
+                <dd data-col="airlock_pii" style="--v:0.922">0,922</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.943">0,943</dd>
+              </div>
+              <div>
+                <dt>Presidio, баптаусыз</dt>
+                <dd data-col="presidio_default" style="--v:0.680">0,680</dd>
+              </div>
+              <div>
+                <dt>Presidio, орыс тілді модельмен</dt>
+                <dd data-col="presidio_ru" style="--v:0.482">0,482</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Ескертпе.</strong> Нөмірлер, пошта және құпия деректер бойынша нәтиже шеңберлі: сынақ мәндері де, оларды іздейтін тексерулер де бір кітапханадан алынған. Presidio Қазақстанға бапталмаған: онда ЖСН, БСН және құпия деректер үшін түрлер жоқ, сондықтан ол кез келген түрдегі белгімен жапқанның бәрі есепке алынды.</p>
+          </div>
+          <div class="metric" data-row="PERSON as typed: names the library has on no list">
+            <h3>Кітапхана сөздіктерінде жоқ аты-жөндер</h3>
+            <p class="n">мән саны: 181</p>
+            <dl>
+              <div>
+                <dt>NER өшірілген Airlock</dt>
+                <dd data-col="airlock_pii" style="--v:0.508">0,508</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.829">0,829</dd>
+              </div>
+              <div>
+                <dt>Presidio, баптаусыз</dt>
+                <dd data-col="presidio_default" style="--v:0.591">0,591</dd>
+              </div>
+              <div>
+                <dt>Presidio, орыс тілді модельмен</dt>
+                <dd data-col="presidio_ru" style="--v:0.652">0,652</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Ескертпе.</strong> Аты-жөндер бойынша кітапхана өз сөздіктерімен тексерілмейтін жалғыз жол. Әдепкі бойынша Airlock NER-мен жұмыс істейді және мұнда 0,829 көрсетеді: бұл Presidio-ның екі нұсқасынан да көп (0,591 және 0,652). NER өшірілгенде 0,508, яғни жартысы ғана: бұл екеуінен де аз.</p>
+          </div>
+          <div class="metric" data-row="OCR-like noise: values it touched">
+            <h3>Мәтінді тану қателері тиген мәндер</h3>
+            <p class="n">мән саны: 161</p>
+            <dl>
+              <div>
+                <dt>NER өшірілген Airlock</dt>
+                <dd data-col="airlock_pii" style="--v:0.180">0,180</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.180">0,180</dd>
+              </div>
+              <div>
+                <dt>Presidio, баптаусыз</dt>
+                <dd data-col="presidio_default" style="--v:0.099">0,099</dd>
+              </div>
+              <div>
+                <dt>Presidio, орыс тілді модельмен</dt>
+                <dd data-col="presidio_ru" style="--v:0.093">0,093</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Ескертпе.</strong> Сканерленген құжатты танығаннан кейінгідей: нөл мен O әрпі, бір мен l әрпі шатастырылған, бір бос орын бұзылған. Мұны детекторлардың ешқайсысы еңсере алмайды: Airlock мәндердің бестен біріне жетпейтін бөлігін ғана табады.</p>
+          </div>
+          <div class="metric" data-row="As typed: Kazakh in Latin letters">
+            <h3>Латын әрпімен жазылған қазақша мәтін</h3>
+            <p class="n">мән саны: 266</p>
+            <dl>
+              <div>
+                <dt>NER өшірілген Airlock</dt>
+                <dd data-col="airlock_pii" style="--v:0.966">0,966</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.966">0,966</dd>
+              </div>
+              <div>
+                <dt>Presidio, баптаусыз</dt>
+                <dd data-col="presidio_default" style="--v:0.500">0,500</dd>
+              </div>
+              <div>
+                <dt>Presidio, орыс тілді модельмен</dt>
+                <dd data-col="presidio_ru" style="--v:0.248">0,248</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Ескертпе.</strong> Бұл сан шындықтан жақсырақ көрінеді. Сынақ мәтіндерін ережелердің авторы жазған, оларды тіл иесі тексермеген. «parol» және «dangyly» сөздерін кітапхана әзірге білмейді: біріншісінен кейінгі құпиясөзді өткізіп алады, ал даңғыл атауынан адамның есімін көреді.</p>
+          </div>
+          <div class="metric" data-row="Negatives with a false positive">
+            <h3>Жалған дабылдар</h3>
+            <p class="n">деректері жоқ мәтіндер: 400; аз болған сайын жақсы</p>
+            <dl>
+              <div>
+                <dt>NER өшірілген Airlock</dt>
+                <dd data-col="airlock_pii" style="--v:0.012">1,2%</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.022">2,2%</dd>
+              </div>
+              <div>
+                <dt>Presidio, баптаусыз</dt>
+                <dd data-col="presidio_default" style="--v:0.605">60,5%</dd>
+              </div>
+              <div>
+                <dt>Presidio, орыс тілді модельмен</dt>
+                <dd data-col="presidio_ru" style="--v:0.385">38,5%</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Ескертпе.</strong> Деректері жоқ мәтіндердің ішінде детектор бәрібір осы түрлердің бірін тапқандарының үлесі. Бұлар да сол автордың үлгілері: «ЖСН» сөзінсіз он екі цифр, тапсырыс нөмірлері, адам есімімен аталған көшелер.</p>
+          </div>
+        </div>
+        <p>Барлық түрлер, кесінділер және ескертпелер бар толық кестелер — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md">нәтижелер файлында</a>. Ондағы бесінші детектор — тексерусіз тұрақты өрнектер жиыны — мұнда көрсетілмеген.</p>
+      </div>
+    </section>
+
+    <section id="kk-demo" aria-labelledby="kk-demo-h">
+      <div class="wrap">
+        <h2 id="kk-demo-h">Демо</h2>
+        <p class="ph-box video">Мұнда екі минуттық демо болады.</p>
+      </div>
+    </section>
+
+    <section id="kk-pilot" aria-labelledby="kk-pilot-h">
+      <div class="wrap">
+        <h2 id="kk-pilot-h">Пилот</h2>
+        <p>Пилотқа үш серіктес іздейміз: қызметкерлеріне тілдік модельдерді қолдануға мүмкіндік бергісі келетін, бірақ дербес деректерді өз желісінен тыс шығарғысы келмейтін компаниялар.</p>
+        <p class="actions">
+          <span class="cta"><a class="btn primary" href="mailto:hello@airlockteam.com?subject=Airlock%20%D0%BF%D0%B8%D0%BB%D0%BE%D1%82%D1%8B">Пилот серіктесі болу (3 орын)</a></span>
+        </p>
+        <p class="note">Батырма hello@airlockteam.com мекенжайына хатты пошта бағдарламаңызда ашады.</p>
+      </div>
+    </section>
+  </div>
+
+  <div data-l="en" lang="en">
+    <section class="hero" aria-labelledby="en-h1">
+      <div class="wrap">
+        <div class="pitch">
+          <h1 id="en-h1">Use ChatGPT and Claude for real work&nbsp;— customer data is replaced with placeholders before the request is sent</h1>
+          <p class="lead">Airlock runs inside your network, between your staff and the language model. It finds personal data in a request, replaces it with placeholders, and only then sends the text to the provider. In the answer the values are put back.</p>
+          <p class="status">This is an early version. What Airlock finds and what it misses is <a href="#en-bench">shown in numbers below</a>.</p>
+          <p class="actions">
+            <span class="cta"><a class="btn primary" href="mailto:hello@airlockteam.com?subject=Airlock%20pilot">Become a pilot partner (3 slots)</a></span>
+          </p>
+        </div>
+        <!-- The first two steps of "how it works" once more, for the eye, on a wide screen only. -->
+        <div class="peek" aria-hidden="true">
+          <p class="who">The employee writes</p>
+          <p class="sample">Draft a polite loan decline letter. Client: <mark class="v">Nurgul Yermekova</mark>, IIN <mark class="v">539212232138</mark>, account <mark class="v">KZ60 9999 1585 882B 2215</mark>.</p>
+          <p class="who">The provider sees</p>
+          <p class="sample">Draft a polite loan decline letter. Client: <code class="t">[PERSON_1]</code>, IIN <code class="t">[IIN_1]</code>, account <code class="t">[KZ_IBAN_1]</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="en-problem" aria-labelledby="en-problem-h">
+      <div class="wrap">
+        <h2 id="en-problem-h">The problem</h2>
+        <p>It is easier for an employee to paste a customer's letter into a chat with a model than to strip the names and numbers out of it. The letter holds a full name, an IIN, an account number. A second later they are on someone else's servers.</p>
+        <p>A ban does not say how to do the same work without the model.</p>
+        <p>Article 16 of Kazakhstan's <a href="https://adilet.zan.kz/eng/docs/Z1300000094">Law “On Personal Data and Their Protection”</a> (No. 94-V of 21 May 2013) restricts the transfer of personal data abroad.</p>
+      </div>
+    </section>
+
+    <section id="en-how" aria-labelledby="en-how-h">
+      <div class="wrap">
+        <h2 id="en-how-h">How it works</h2>
+        <ol class="steps">
+          <li class="step inside">
+            <p class="zone">Inside your network</p>
+            <h3>Mask</h3>
+            <p>The gateway finds the values and puts placeholders in their place. One value, one placeholder, however often it appears.</p>
+            <p class="who">The employee writes</p>
+            <p class="sample">Draft a polite loan decline letter. Client: <mark class="v">Nurgul Yermekova</mark>, IIN <mark class="v">539212232138</mark>, account <mark class="v">KZ60 9999 1585 882B 2215</mark>.</p>
+          </li>
+          <li class="step outside">
+            <p class="zone">At the model provider</p>
+            <h3>Model</h3>
+            <p>The provider receives text with placeholders and answers with text that has placeholders.</p>
+            <p class="who">The provider sees</p>
+            <p class="sample">Draft a polite loan decline letter. Client: <code class="t">[PERSON_1]</code>, IIN <code class="t">[IIN_1]</code>, account <code class="t">[KZ_IBAN_1]</code>.</p>
+          </li>
+          <li class="step inside">
+            <p class="zone">Inside your network</p>
+            <h3>Restore</h3>
+            <p>The gateway puts the values back. Inside a link a placeholder stays as it is.</p>
+            <p class="who">The employee reads</p>
+            <p class="sample">Dear <mark class="v">Nurgul Yermekova</mark>, unfortunately the bank cannot approve your loan application.</p>
+          </li>
+        </ol>
+        <p class="note">Every value in the examples is synthetic.</p>
+        <div class="secrets">
+          <h3>Secrets are not masked: they stop the request</h3>
+          <p>An API key, a token, a password, a private key, a database connection string: a request that holds one is not sent to the provider at all. The employee reads this message:</p>
+          <blockquote class="blocked">Request blocked: it contains secrets (keys, passwords, tokens). Remove them from the message or start a new chat.</blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section id="en-detects" aria-labelledby="en-detects-h">
+      <div class="wrap">
+        <h2 id="en-detects-h">What Airlock detects</h2>
+        <ul class="cards">
+          <li>
+            <h3>IIN and BIN</h3>
+            <p>Twelve digits with a check digit. The words next to them count: “ИИН”, “ЖСН”, “IIN”, “БИН”, “BIN”.</p>
+          </li>
+          <li>
+            <h3>Kazakhstan IBAN</h3>
+            <p>KZ and 18 more characters, checked by ISO 13616. Also found when written in groups of four.</p>
+          </li>
+          <li>
+            <h3>Payment cards</h3>
+            <p>13 to 19 digits, checked with the Luhn algorithm. With spaces or dashes too.</p>
+          </li>
+          <li>
+            <h3>+7 phone numbers</h3>
+            <p>In the usual notations: <span class="nw">+7 (7xx) xxx-xx-xx</span>, <span class="nw">87xxxxxxxxx</span>.</p>
+          </li>
+          <li>
+            <h3>E-mail</h3>
+            <p>Addresses on any domain.</p>
+          </li>
+          <li>
+            <h3>Names</h3>
+            <p>In Russian and Kazakh: by lists of given names, by the endings of surnames and patronymics, and by the words around them. This is the hardest type: see the numbers below.</p>
+          </li>
+          <li>
+            <h3>Secrets</h3>
+            <p>API keys, tokens, passwords, private keys, connection strings. A request with a secret is blocked whole.</p>
+          </li>
+        </ul>
+        <p class="note">Not detected yet: postal addresses, document numbers, dates of birth.</p>
+        <p>The detector is an open-source library, <a href="https://github.com/airlockteam/airlock-pii">airlock-pii</a> (Apache-2.0): you can read its rules and run the benchmark yourself.</p>
+      </div>
+    </section>
+
+    <section id="en-deploy" aria-labelledby="en-deploy-h">
+      <div class="wrap">
+        <h2 id="en-deploy-h">Deployment</h2>
+        <ul class="cards">
+          <li>
+            <h3>Inside your network</h3>
+            <p>Docker Compose on your server: the chat, the gateway and a database. Only the gateway calls the model provider. The chat and its database have no route to the internet, and one command checks that.</p>
+          </li>
+          <li>
+            <h3>Your own API keys</h3>
+            <p>OpenAI, Anthropic, or any service with an OpenAI-compatible API. The keys stay on your server.</p>
+          </li>
+          <li>
+            <h3>Policy in one file</h3>
+            <p>For each type of data you choose: mask it, block the request, or let it through as typed.</p>
+          </li>
+          <li data-card="audit">
+            <h3>Audit log</h3>
+            <p>Every request that the gateway accepts for processing leaves a record: who, when, which model, what was done, and how many values of which type were found. By default a record holds no value and no text of the request. The records are chained with HMAC under the gateway's key: a check finds a record that was changed or removed without the key.</p>
+            <p class="caveat"><strong>Caveat.</strong> The check does not see the newest records removed: a chain that ends earlier is still a chain. If you switch on keeping the masked text, a record also holds whatever the detector missed.</p>
+          </li>
+          <li>
+            <h3>What stays with you</h3>
+            <p>The staff's conversations, with the real values, are kept in the chat's database inside your network, in plain text. Access to the server and disk encryption are yours to look after.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="en-bench" aria-labelledby="en-bench-h" data-source="2026-10-18_compare.md">
+      <div class="wrap">
+        <h2 id="en-bench-h">Benchmark: what it finds and what it misses</h2>
+        <p>The detector was run on 2,000 synthetic texts; 400 of them hold nothing to find. A figure is the share of values that a placeholder would cover whole. Run on 18 October 2026 with airlock-pii 0.1.0 and Presidio 2.2.364; the results file is <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md"><code>bench/results/2026-10-18_compare.md</code></a>. The <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">methodology</a> says how the data and the scoring work.</p>
+        <p data-gateway-default="airlock_pii_ner">By default the gateway runs with the Russian NER: the second line of each card. One setting switches it off, and the gateway then runs on the rules alone: the first line.</p>
+        <div class="metrics">
+          <div class="metric" data-row="All types, under a span of any type">
+            <h3>All types of data</h3>
+            <p class="n">values: 3,451</p>
+            <dl>
+              <div>
+                <dt>Airlock with the NER off</dt>
+                <dd data-col="airlock_pii" style="--v:0.922">0.922</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock by default: rules and the Russian NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.943">0.943</dd>
+              </div>
+              <div>
+                <dt>Presidio, out of the box</dt>
+                <dd data-col="presidio_default" style="--v:0.680">0.680</dd>
+              </div>
+              <div>
+                <dt>Presidio with a Russian model</dt>
+                <dd data-col="presidio_ru" style="--v:0.482">0.482</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Caveat.</strong> For numbers, e-mail and secrets the result is circular: the test values and the checks that look for them come from the same library. Presidio was not tuned for Kazakhstan: it has no type for an IIN, a BIN or a secret, so it is credited with everything it covered under a span of any type.</p>
+          </div>
+          <div class="metric" data-row="PERSON as typed: names the library has on no list">
+            <h3>Names the library has on no list</h3>
+            <p class="n">values: 181</p>
+            <dl>
+              <div>
+                <dt>Airlock with the NER off</dt>
+                <dd data-col="airlock_pii" style="--v:0.508">0.508</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock by default: rules and the Russian NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.829">0.829</dd>
+              </div>
+              <div>
+                <dt>Presidio, out of the box</dt>
+                <dd data-col="presidio_default" style="--v:0.591">0.591</dd>
+              </div>
+              <div>
+                <dt>Presidio with a Russian model</dt>
+                <dd data-col="presidio_ru" style="--v:0.652">0.652</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Caveat.</strong> The one row for names that does not grade the library on its own lists. By default, with the NER, Airlock scores 0.829 here: more than either Presidio configuration (0.591 and 0.652). With the NER off it scores 0.508, half: less than either.</p>
+          </div>
+          <div class="metric" data-row="OCR-like noise: values it touched">
+            <h3>Values touched by OCR-like noise</h3>
+            <p class="n">values: 161</p>
+            <dl>
+              <div>
+                <dt>Airlock with the NER off</dt>
+                <dd data-col="airlock_pii" style="--v:0.180">0.180</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock by default: rules and the Russian NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.180">0.180</dd>
+              </div>
+              <div>
+                <dt>Presidio, out of the box</dt>
+                <dd data-col="presidio_default" style="--v:0.099">0.099</dd>
+              </div>
+              <div>
+                <dt>Presidio with a Russian model</dt>
+                <dd data-col="presidio_ru" style="--v:0.093">0.093</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Caveat.</strong> As after OCR of a scan: a zero and the letter O, a one and the letter l swapped, one space broken. No detector copes: Airlock finds fewer than one value in five.</p>
+          </div>
+          <div class="metric" data-row="As typed: Kazakh in Latin letters">
+            <h3>Kazakh in Latin letters</h3>
+            <p class="n">values: 266</p>
+            <dl>
+              <div>
+                <dt>Airlock with the NER off</dt>
+                <dd data-col="airlock_pii" style="--v:0.966">0.966</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock by default: rules and the Russian NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.966">0.966</dd>
+              </div>
+              <div>
+                <dt>Presidio, out of the box</dt>
+                <dd data-col="presidio_default" style="--v:0.500">0.500</dd>
+              </div>
+              <div>
+                <dt>Presidio with a Russian model</dt>
+                <dd data-col="presidio_ru" style="--v:0.248">0.248</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Caveat.</strong> This figure flatters. The test texts were written by the author of the rules, and no native speaker has checked them. The library does not know the words “parol” and “dangyly” yet: it misses a password after the first, and reads a person's name in the name of an avenue.</p>
+          </div>
+          <div class="metric" data-row="Negatives with a false positive">
+            <h3>False positives</h3>
+            <p class="n">texts with nothing to find: 400; lower is better</p>
+            <dl>
+              <div>
+                <dt>Airlock with the NER off</dt>
+                <dd data-col="airlock_pii" style="--v:0.012">1.2%</dd>
+              </div>
+              <div class="own">
+                <dt>Airlock by default: rules and the Russian NER</dt>
+                <dd data-col="airlock_pii_ner" style="--v:0.022">2.2%</dd>
+              </div>
+              <div>
+                <dt>Presidio, out of the box</dt>
+                <dd data-col="presidio_default" style="--v:0.605">60.5%</dd>
+              </div>
+              <div>
+                <dt>Presidio with a Russian model</dt>
+                <dd data-col="presidio_ru" style="--v:0.385">38.5%</dd>
+              </div>
+            </dl>
+            <p class="caveat"><strong>Caveat.</strong> The share of texts with nothing to find in which a detector still reported one of these types. These too are templates by the same author: twelve digits without the word “IIN”, order numbers, streets named after people.</p>
+          </div>
+        </div>
+        <p>The full tables, with every type, the slices and the notes, are in the <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md">results file</a>. Its fifth detector, a set of regular expressions with no checks, is not shown here.</p>
+      </div>
+    </section>
+
+    <section id="en-demo" aria-labelledby="en-demo-h">
+      <div class="wrap">
+        <h2 id="en-demo-h">Demo</h2>
+        <p class="ph-box video">A two-minute demo goes here.</p>
+      </div>
+    </section>
+
+    <section id="en-pilot" aria-labelledby="en-pilot-h">
+      <div class="wrap">
+        <h2 id="en-pilot-h">Pilot</h2>
+        <p>We are looking for three pilot partners: companies that want to give their staff language models and keep personal data inside their own network.</p>
+        <p class="actions">
+          <span class="cta"><a class="btn primary" href="mailto:hello@airlockteam.com?subject=Airlock%20pilot">Become a pilot partner (3 slots)</a></span>
+        </p>
+        <p class="note">The button opens a message to hello@airlockteam.com in your mail program.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div data-l="ru" lang="ru">
+      <p>Контакт: <a href="mailto:hello@airlockteam.com">hello@airlockteam.com</a></p>
+      <p>На этой странице нет трекеров, счётчиков и cookies, и она ничего не загружает с других сайтов. Её размещает GitHub Pages: GitHub записывает и хранит IP-адреса посетителей в целях безопасности (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">заявление GitHub о конфиденциальности</a>). Письма на hello@airlockteam.com пересылает Cloudflare (<a href="https://www.cloudflare.com/privacypolicy/">его политика конфиденциальности</a>). Мы получаем только ваше письмо и адрес, с которого оно отправлено.</p>
+    </div>
+    <div data-l="kk" lang="kk">
+      <p>Байланыс: <a href="mailto:hello@airlockteam.com">hello@airlockteam.com</a></p>
+      <p>Бұл бетте трекерлер, есептегіштер және cookie файлдары жоқ, ол басқа сайттардан ештеңе жүктемейді. Бетті GitHub Pages орналастырады: GitHub қауіпсіздік мақсатында келушілердің IP мекенжайларын жазып, сақтайды (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub құпиялылық мәлімдемесі</a>). hello@airlockteam.com мекенжайына жазылған хаттарды Cloudflare бағыттайды (<a href="https://www.cloudflare.com/privacypolicy/">оның құпиялылық саясаты</a>). Біз тек хатыңызды және ол жіберілген мекенжайды аламыз.</p>
+    </div>
+    <div data-l="en" lang="en">
+      <p>Contact: <a href="mailto:hello@airlockteam.com">hello@airlockteam.com</a></p>
+      <p>This page has no trackers, no counters and no cookies, and it loads nothing from other sites. It is hosted on GitHub Pages: GitHub logs and stores visitors' IP addresses for security purposes (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>). Mail to hello@airlockteam.com is forwarded by Cloudflare (<a href="https://www.cloudflare.com/privacypolicy/">its privacy policy</a>). We receive only your message and the address it is sent from.</p>
+    </div>
+    <p>© 2026 Airlock</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  // The page works without this script: the radio buttons switch the language through CSS.
+  // The script keeps three things in step with them: the language of the document, its title,
+  // and the address, so that a link opens in the language it was copied in. It stores nothing.
+  var titles = {
+    ru: "Airlock — ИИ-шлюз для вашей компании",
+    kk: "Airlock — компанияңызға арналған ЖИ-шлюз",
+    en: "Airlock — a secure gateway between your team and AI"
+  };
+  var radios = Array.prototype.slice.call(document.querySelectorAll('input[name="lang"]'));
+
+  function chosen() {
+    for (var i = 0; i < radios.length; i += 1) {
+      if (radios[i].checked) {
+        return radios[i].value;
+      }
+    }
+    return "ru";
+  }
+
+  function show() {
+    var lang = chosen();
+    document.documentElement.lang = lang;
+    document.title = titles[lang];
+  }
+
+  function remember() {
+    try {
+      var url = new URL(window.location.href);
+      if (chosen() === "ru") {
+        url.searchParams.delete("lang");
+      } else {
+        url.searchParams.set("lang", chosen());
+      }
+      window.history.replaceState(null, "", url);
+    } catch (error) {
+      // A page opened from a file may not rewrite its address. The language still switches.
+    }
+  }
+
+  var asked = new URLSearchParams(window.location.search).get("lang");
+  radios.forEach(function (radio) {
+    if (radio.value === asked) {
+      radio.checked = true;
+    }
+    radio.addEventListener("change", function () {
+      show();
+      remember();
+    });
+  });
+  show();
+  // A browser may put the choice back after the script has run (back, forward, reload).
+  window.addEventListener("pageshow", show);
+})();
+</script>
+</body>
+</html>
