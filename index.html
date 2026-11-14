@@ -323,6 +323,14 @@ footer p { margin-bottom: 0.6rem; }
             <p>Адреса в любом домене.</p>
           </li>
           <li>
+            <h3>Удостоверения и паспорта</h3>
+            <p>Девять цифр удостоверения личности и вида на жительство, буква и восемь цифр паспорта. Перед номером должно стоять название документа.</p>
+          </li>
+          <li>
+            <h3>Почтовые адреса</h3>
+            <p>Улица с номером дома, квартира или офис: по-русски, по-казахски и латиницей.</p>
+          </li>
+          <li>
             <h3>Имена</h3>
             <p>На русском и казахском: по словарям имён, по окончаниям фамилий и отчеств, по словам рядом. Это самый трудный тип: цифры ниже.</p>
           </li>
@@ -331,7 +339,7 @@ footer p { margin-bottom: 0.6rem; }
             <p>Ключи API, токены, пароли, приватные ключи, строки подключения. Запрос с секретом блокируется целиком.</p>
           </li>
         </ul>
-        <p class="note">Пока не находит: почтовые адреса, номера документов, даты рождения.</p>
+        <p class="note">Пока не находит: даты рождения и номер документа через несколько слов после его названия.</p>
         <p>Детектор — открытая библиотека <a href="https://github.com/airlockteam/airlock-pii">airlock-pii</a> (Apache-2.0): её правила можно прочитать, а бенчмарк — запустить самим.</p>
       </div>
     </section>
@@ -365,103 +373,103 @@ footer p { margin-bottom: 0.6rem; }
       </div>
     </section>
 
-    <section id="ru-bench" aria-labelledby="ru-bench-h" data-source="2026-10-18_compare.md">
+    <section id="ru-bench" aria-labelledby="ru-bench-h" data-source="2026-11-04_compare.md">
       <div class="wrap">
         <h2 id="ru-bench-h">Бенчмарк: что находит и что пропускает</h2>
-        <p>Детектор проверен на 2000 синтетических текстов; в 400 из них искать нечего. Цифра — доля значений, которые метка закрыла бы целиком. Прогон 18 октября 2026 года, airlock-pii 0.1.0 и Presidio 2.2.364; файл результатов — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md"><code>bench/results/2026-10-18_compare.md</code></a>. Как устроены данные и подсчёт, описано в <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">методике</a>.</p>
+        <p>Детектор проверен на 2000 синтетических текстов; в 400 из них искать нечего. Цифра — доля значений, которые метка закрыла бы целиком. Прогон 4 ноября 2026 года, airlock-pii 0.2.0 и Presidio 2.2.364; файл результатов — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-11-04_compare.md"><code>bench/results/2026-11-04_compare.md</code></a>. Как устроены данные и подсчёт, описано в <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">методике</a>.</p>
         <p data-gateway-default="airlock_pii_ner">Шлюз по умолчанию работает с русским NER: это вторая строка в каждой карточке. Его можно отключить одной настройкой, и тогда шлюз работает на одних правилах: это первая строка.</p>
         <div class="metrics">
           <div class="metric" data-row="All types, under a span of any type">
             <h3>Все типы данных</h3>
-            <p class="n">значений: 3451</p>
+            <p class="n">значений: 3600</p>
             <dl>
               <div>
                 <dt>Airlock с выключенным NER</dt>
-                <dd data-col="airlock_pii" style="--v:0.922">0,922</dd>
+                <dd data-col="airlock_pii" style="--v:0.934">0,934</dd>
               </div>
               <div class="own">
                 <dt>Airlock по умолчанию: правила и русский NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.943">0,943</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.955">0,955</dd>
               </div>
               <div>
                 <dt>Presidio без настройки</dt>
-                <dd data-col="presidio_default" style="--v:0.680">0,680</dd>
+                <dd data-col="presidio_default" style="--v:0.653">0,653</dd>
               </div>
               <div>
                 <dt>Presidio с русской моделью</dt>
-                <dd data-col="presidio_ru" style="--v:0.482">0,482</dd>
+                <dd data-col="presidio_ru" style="--v:0.457">0,457</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Оговорка.</strong> По номерам, почте и секретам результат круговой: значения для теста и проверки, которые их ищут, взяты из одной библиотеки. Presidio под Казахстан не настраивали: типов для ИИН, БИН и секретов у него нет, поэтому ему засчитано всё, что он закрыл меткой любого типа.</p>
+            <p class="caveat"><strong>Оговорка.</strong> По номерам, почте, секретам, документам и адресам результат круговой: значения для теста и проверки, которые их ищут, взяты из одной библиотеки. Presidio под Казахстан не настраивали: типов для ИИН, БИН, секретов, казахстанских документов и почтовых адресов у него нет, поэтому ему засчитано всё, что он закрыл меткой любого типа.</p>
           </div>
           <div class="metric" data-row="PERSON as typed: names the library has on no list">
             <h3>Имена, которых нет в словарях библиотеки</h3>
-            <p class="n">значений: 181</p>
+            <p class="n">значений: 202</p>
             <dl>
               <div>
                 <dt>Airlock с выключенным NER</dt>
-                <dd data-col="airlock_pii" style="--v:0.508">0,508</dd>
+                <dd data-col="airlock_pii" style="--v:0.545">0,545</dd>
               </div>
               <div class="own">
                 <dt>Airlock по умолчанию: правила и русский NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.829">0,829</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.891">0,891</dd>
               </div>
               <div>
                 <dt>Presidio без настройки</dt>
-                <dd data-col="presidio_default" style="--v:0.591">0,591</dd>
+                <dd data-col="presidio_default" style="--v:0.609">0,609</dd>
               </div>
               <div>
                 <dt>Presidio с русской моделью</dt>
-                <dd data-col="presidio_ru" style="--v:0.652">0,652</dd>
+                <dd data-col="presidio_ru" style="--v:0.673">0,673</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Оговорка.</strong> Единственная строка по именам, где библиотеку не проверяют по её собственным словарям. По умолчанию, с NER, у Airlock здесь 0,829: больше, чем у обоих вариантов Presidio (0,591 и 0,652). С выключенным NER — 0,508, половина: меньше, чем у обоих.</p>
+            <p class="caveat"><strong>Оговорка.</strong> Единственная строка по именам, где библиотеку не проверяют по её собственным словарям. По умолчанию, с NER, у Airlock здесь 0,891: больше, чем у обоих вариантов Presidio (0,609 и 0,673). С выключенным NER — 0,545, чуть больше половины: меньше, чем у обоих.</p>
           </div>
           <div class="metric" data-row="OCR-like noise: values it touched">
             <h3>Значения, которые задел шум распознавания</h3>
-            <p class="n">значений: 161</p>
+            <p class="n">значений: 149</p>
             <dl>
               <div>
                 <dt>Airlock с выключенным NER</dt>
-                <dd data-col="airlock_pii" style="--v:0.180">0,180</dd>
+                <dd data-col="airlock_pii" style="--v:0.235">0,235</dd>
               </div>
               <div class="own">
                 <dt>Airlock по умолчанию: правила и русский NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.180">0,180</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.242">0,242</dd>
               </div>
               <div>
                 <dt>Presidio без настройки</dt>
-                <dd data-col="presidio_default" style="--v:0.099">0,099</dd>
+                <dd data-col="presidio_default" style="--v:0.107">0,107</dd>
               </div>
               <div>
                 <dt>Presidio с русской моделью</dt>
-                <dd data-col="presidio_ru" style="--v:0.093">0,093</dd>
+                <dd data-col="presidio_ru" style="--v:0.094">0,094</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Оговорка.</strong> Как после распознавания скана: ноль и буква O, единица и буква l перепутаны, один пробел сломан. С этим не справляется ни один детектор: Airlock находит меньше одного значения из пяти.</p>
+            <p class="caveat"><strong>Оговорка.</strong> Как после распознавания скана: ноль и буква O, единица и буква l перепутаны, один пробел сломан. С этим не справляется ни один детектор: Airlock находит меньше одного значения из четырёх.</p>
           </div>
           <div class="metric" data-row="As typed: Kazakh in Latin letters">
             <h3>Казахский текст латиницей</h3>
-            <p class="n">значений: 266</p>
+            <p class="n">значений: 295</p>
             <dl>
               <div>
                 <dt>Airlock с выключенным NER</dt>
-                <dd data-col="airlock_pii" style="--v:0.966">0,966</dd>
+                <dd data-col="airlock_pii" style="--v:0.969">0,969</dd>
               </div>
               <div class="own">
                 <dt>Airlock по умолчанию: правила и русский NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.966">0,966</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.969">0,969</dd>
               </div>
               <div>
                 <dt>Presidio без настройки</dt>
-                <dd data-col="presidio_default" style="--v:0.500">0,500</dd>
+                <dd data-col="presidio_default" style="--v:0.471">0,471</dd>
               </div>
               <div>
                 <dt>Presidio с русской моделью</dt>
-                <dd data-col="presidio_ru" style="--v:0.248">0,248</dd>
+                <dd data-col="presidio_ru" style="--v:0.217">0,217</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Оговорка.</strong> Эта цифра льстит. Тексты для теста писал автор правил, и носитель языка их не проверял. Слов «parol» и «dangyly» библиотека пока не знает: пароль после первого она пропускает, а в названии проспекта видит имя человека.</p>
+            <p class="caveat"><strong>Оговорка.</strong> Эта цифра льстит. Тексты для теста писал автор правил, и носитель языка их не проверял. Слова «parol» библиотека пока не знает и пароль после него пропускает. В «Abai dangyly» без номера дома она видит имя человека, а иногда и с номером.</p>
           </div>
           <div class="metric" data-row="Negatives with a false positive">
             <h3>Ложные срабатывания</h3>
@@ -469,7 +477,7 @@ footer p { margin-bottom: 0.6rem; }
             <dl>
               <div>
                 <dt>Airlock с выключенным NER</dt>
-                <dd data-col="airlock_pii" style="--v:0.012">1,2%</dd>
+                <dd data-col="airlock_pii" style="--v:0.015">1,5%</dd>
               </div>
               <div class="own">
                 <dt>Airlock по умолчанию: правила и русский NER</dt>
@@ -477,17 +485,17 @@ footer p { margin-bottom: 0.6rem; }
               </div>
               <div>
                 <dt>Presidio без настройки</dt>
-                <dd data-col="presidio_default" style="--v:0.605">60,5%</dd>
+                <dd data-col="presidio_default" style="--v:0.632">63,2%</dd>
               </div>
               <div>
                 <dt>Presidio с русской моделью</dt>
-                <dd data-col="presidio_ru" style="--v:0.385">38,5%</dd>
+                <dd data-col="presidio_ru" style="--v:0.370">37,0%</dd>
               </div>
             </dl>
             <p class="caveat"><strong>Оговорка.</strong> Доля текстов без данных, в которых детектор всё же нашёл что-то из этих типов. Это тоже шаблоны того же автора: двенадцать цифр без слова «ИИН», номера заказов, улицы в честь людей.</p>
           </div>
         </div>
-        <p>Полные таблицы со всеми типами, срезами и оговорками — в <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md">файле результатов</a>. Пятый детектор оттуда, набор регулярных выражений без проверок, здесь не показан.</p>
+        <p>Полные таблицы со всеми типами, срезами и оговорками — в <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-11-04_compare.md">файле результатов</a>. Пятый детектор оттуда, набор регулярных выражений без проверок, здесь не показан.</p>
       </div>
     </section>
 
@@ -600,6 +608,14 @@ footer p { margin-bottom: 0.6rem; }
             <p>Кез келген домендегі мекенжайлар.</p>
           </li>
           <li>
+            <h3>Жеке куәліктер мен төлқұжаттар</h3>
+            <p>Жеке куәлік пен ықтиярхаттың тоғыз цифры, төлқұжаттың бір әрпі мен сегіз цифры. Нөмірдің алдында құжаттың атауы тұруы керек.</p>
+          </li>
+          <li>
+            <h3>Пошталық мекенжайлар</h3>
+            <p>Үй нөмірі бар көше, пәтер немесе кеңсе: орысша, қазақша және латын әрпімен.</p>
+          </li>
+          <li>
             <h3>Аты-жөндер</h3>
             <p>Орыс және қазақ тілдерінде: есімдер сөздігі, тек пен әкесінің аты жалғаулары және жанындағы сөздер бойынша. Бұл — ең қиын түрі: сандар төменде.</p>
           </li>
@@ -608,7 +624,7 @@ footer p { margin-bottom: 0.6rem; }
             <p>API кілттері, токендер, құпиясөздер, жеке кілттер, қосылу жолдары. Құпия дерек бар сұраныс толығымен бұғатталады.</p>
           </li>
         </ul>
-        <p class="note">Әзірге таппайды: пошталық мекенжайлар, құжат нөмірлері, туған күндер.</p>
+        <p class="note">Әзірге таппайды: туған күндерді және құжат атауынан бірнеше сөз кейін тұрған нөмірді.</p>
         <p>Детектор — ашық кітапхана <a href="https://github.com/airlockteam/airlock-pii">airlock-pii</a> (Apache-2.0): оның ережелерін оқуға, ал бенчмаркты өзіңіз іске қосуға болады.</p>
       </div>
     </section>
@@ -642,103 +658,103 @@ footer p { margin-bottom: 0.6rem; }
       </div>
     </section>
 
-    <section id="kk-bench" aria-labelledby="kk-bench-h" data-source="2026-10-18_compare.md">
+    <section id="kk-bench" aria-labelledby="kk-bench-h" data-source="2026-11-04_compare.md">
       <div class="wrap">
         <h2 id="kk-bench-h">Бенчмарк: нені табады, нені өткізіп алады</h2>
-        <p>Детектор 2000 синтетикалық мәтінде тексерілді; оның 400-інде іздейтін ештеңе жоқ. Көрсеткіш — белгі толық жабатын мәндердің үлесі. Сынақ 2026 жылғы 18 қазанда өткізілді, airlock-pii 0.1.0 және Presidio 2.2.364; нәтижелер файлы — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md"><code>bench/results/2026-10-18_compare.md</code></a>. Деректер мен есептеу тәсілі <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">әдістемеде</a> сипатталған.</p>
+        <p>Детектор 2000 синтетикалық мәтінде тексерілді; оның 400-інде іздейтін ештеңе жоқ. Көрсеткіш — белгі толық жабатын мәндердің үлесі. Сынақ 2026 жылғы 4 қарашада өткізілді, airlock-pii 0.2.0 және Presidio 2.2.364; нәтижелер файлы — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-11-04_compare.md"><code>bench/results/2026-11-04_compare.md</code></a>. Деректер мен есептеу тәсілі <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">әдістемеде</a> сипатталған.</p>
         <p data-gateway-default="airlock_pii_ner">Шлюз әдепкі бойынша орыс тілді NER-мен жұмыс істейді: бұл әр карточкадағы екінші жол. Оны бір баптаумен өшіруге болады, сонда шлюз тек ережелермен жұмыс істейді: бұл бірінші жол.</p>
         <div class="metrics">
           <div class="metric" data-row="All types, under a span of any type">
             <h3>Деректердің барлық түрі</h3>
-            <p class="n">мән саны: 3451</p>
+            <p class="n">мән саны: 3600</p>
             <dl>
               <div>
                 <dt>NER өшірілген Airlock</dt>
-                <dd data-col="airlock_pii" style="--v:0.922">0,922</dd>
+                <dd data-col="airlock_pii" style="--v:0.934">0,934</dd>
               </div>
               <div class="own">
                 <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.943">0,943</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.955">0,955</dd>
               </div>
               <div>
                 <dt>Presidio, баптаусыз</dt>
-                <dd data-col="presidio_default" style="--v:0.680">0,680</dd>
+                <dd data-col="presidio_default" style="--v:0.653">0,653</dd>
               </div>
               <div>
                 <dt>Presidio, орыс тілді модельмен</dt>
-                <dd data-col="presidio_ru" style="--v:0.482">0,482</dd>
+                <dd data-col="presidio_ru" style="--v:0.457">0,457</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Ескертпе.</strong> Нөмірлер, пошта және құпия деректер бойынша нәтиже шеңберлі: сынақ мәндері де, оларды іздейтін тексерулер де бір кітапханадан алынған. Presidio Қазақстанға бапталмаған: онда ЖСН, БСН және құпия деректер үшін түрлер жоқ, сондықтан ол кез келген түрдегі белгімен жапқанның бәрі есепке алынды.</p>
+            <p class="caveat"><strong>Ескертпе.</strong> Нөмірлер, электрондық пошта, құпия деректер, құжаттар және мекенжайлар бойынша нәтиже шеңберлі: сынақ мәндері де, оларды іздейтін тексерулер де бір кітапханадан алынған. Presidio Қазақстанға бапталмаған: онда ЖСН, БСН, құпия деректер, қазақстандық құжаттар және пошталық мекенжайлар үшін түрлер жоқ, сондықтан ол кез келген түрдегі белгімен жапқанның бәрі есепке алынды.</p>
           </div>
           <div class="metric" data-row="PERSON as typed: names the library has on no list">
             <h3>Кітапхана сөздіктерінде жоқ аты-жөндер</h3>
-            <p class="n">мән саны: 181</p>
+            <p class="n">мән саны: 202</p>
             <dl>
               <div>
                 <dt>NER өшірілген Airlock</dt>
-                <dd data-col="airlock_pii" style="--v:0.508">0,508</dd>
+                <dd data-col="airlock_pii" style="--v:0.545">0,545</dd>
               </div>
               <div class="own">
                 <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.829">0,829</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.891">0,891</dd>
               </div>
               <div>
                 <dt>Presidio, баптаусыз</dt>
-                <dd data-col="presidio_default" style="--v:0.591">0,591</dd>
+                <dd data-col="presidio_default" style="--v:0.609">0,609</dd>
               </div>
               <div>
                 <dt>Presidio, орыс тілді модельмен</dt>
-                <dd data-col="presidio_ru" style="--v:0.652">0,652</dd>
+                <dd data-col="presidio_ru" style="--v:0.673">0,673</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Ескертпе.</strong> Аты-жөндер бойынша кітапхана өз сөздіктерімен тексерілмейтін жалғыз жол. Әдепкі бойынша Airlock NER-мен жұмыс істейді және мұнда 0,829 көрсетеді: бұл Presidio-ның екі нұсқасынан да көп (0,591 және 0,652). NER өшірілгенде 0,508, яғни жартысы ғана: бұл екеуінен де аз.</p>
+            <p class="caveat"><strong>Ескертпе.</strong> Аты-жөндер бойынша кітапхана өз сөздіктерімен тексерілмейтін жалғыз жол. Әдепкі бойынша Airlock NER-мен жұмыс істейді және мұнда 0,891 көрсетеді: бұл Presidio-ның екі нұсқасынан да көп (0,609 және 0,673). NER өшірілгенде 0,545, яғни жартысынан сәл ғана көп: бұл екеуінен де аз.</p>
           </div>
           <div class="metric" data-row="OCR-like noise: values it touched">
             <h3>Мәтінді тану қателері тиген мәндер</h3>
-            <p class="n">мән саны: 161</p>
+            <p class="n">мән саны: 149</p>
             <dl>
               <div>
                 <dt>NER өшірілген Airlock</dt>
-                <dd data-col="airlock_pii" style="--v:0.180">0,180</dd>
+                <dd data-col="airlock_pii" style="--v:0.235">0,235</dd>
               </div>
               <div class="own">
                 <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.180">0,180</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.242">0,242</dd>
               </div>
               <div>
                 <dt>Presidio, баптаусыз</dt>
-                <dd data-col="presidio_default" style="--v:0.099">0,099</dd>
+                <dd data-col="presidio_default" style="--v:0.107">0,107</dd>
               </div>
               <div>
                 <dt>Presidio, орыс тілді модельмен</dt>
-                <dd data-col="presidio_ru" style="--v:0.093">0,093</dd>
+                <dd data-col="presidio_ru" style="--v:0.094">0,094</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Ескертпе.</strong> Сканерленген құжатты танығаннан кейінгідей: нөл мен O әрпі, бір мен l әрпі шатастырылған, бір бос орын бұзылған. Мұны детекторлардың ешқайсысы еңсере алмайды: Airlock мәндердің бестен біріне жетпейтін бөлігін ғана табады.</p>
+            <p class="caveat"><strong>Ескертпе.</strong> Сканерленген құжатты танығаннан кейінгідей: нөл мен O әрпі, бір мен l әрпі шатастырылған, бір бос орын бұзылған. Мұны детекторлардың ешқайсысы еңсере алмайды: Airlock мәндердің төрттен біріне жетпейтін бөлігін ғана табады.</p>
           </div>
           <div class="metric" data-row="As typed: Kazakh in Latin letters">
             <h3>Латын әрпімен жазылған қазақша мәтін</h3>
-            <p class="n">мән саны: 266</p>
+            <p class="n">мән саны: 295</p>
             <dl>
               <div>
                 <dt>NER өшірілген Airlock</dt>
-                <dd data-col="airlock_pii" style="--v:0.966">0,966</dd>
+                <dd data-col="airlock_pii" style="--v:0.969">0,969</dd>
               </div>
               <div class="own">
                 <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.966">0,966</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.969">0,969</dd>
               </div>
               <div>
                 <dt>Presidio, баптаусыз</dt>
-                <dd data-col="presidio_default" style="--v:0.500">0,500</dd>
+                <dd data-col="presidio_default" style="--v:0.471">0,471</dd>
               </div>
               <div>
                 <dt>Presidio, орыс тілді модельмен</dt>
-                <dd data-col="presidio_ru" style="--v:0.248">0,248</dd>
+                <dd data-col="presidio_ru" style="--v:0.217">0,217</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Ескертпе.</strong> Бұл сан шындықтан жақсырақ көрінеді. Сынақ мәтіндерін ережелердің авторы жазған, оларды тіл иесі тексермеген. «parol» және «dangyly» сөздерін кітапхана әзірге білмейді: біріншісінен кейінгі құпиясөзді өткізіп алады, ал даңғыл атауынан адамның есімін көреді.</p>
+            <p class="caveat"><strong>Ескертпе.</strong> Бұл сан шындықтан жақсырақ көрінеді. Сынақ мәтіндерін ережелердің авторы жазған, оларды тіл иесі тексермеген. «parol» сөзін кітапхана әзірге білмейді және одан кейінгі құпиясөзді өткізіп алады. «Abai dangyly» тіркесінде үй нөмірі болмаса, ал кейде нөмір болса да, адамның есімін көреді.</p>
           </div>
           <div class="metric" data-row="Negatives with a false positive">
             <h3>Жалған дабылдар</h3>
@@ -746,7 +762,7 @@ footer p { margin-bottom: 0.6rem; }
             <dl>
               <div>
                 <dt>NER өшірілген Airlock</dt>
-                <dd data-col="airlock_pii" style="--v:0.012">1,2%</dd>
+                <dd data-col="airlock_pii" style="--v:0.015">1,5%</dd>
               </div>
               <div class="own">
                 <dt>Airlock әдепкі бойынша: ережелер және орыс тілді NER</dt>
@@ -754,17 +770,17 @@ footer p { margin-bottom: 0.6rem; }
               </div>
               <div>
                 <dt>Presidio, баптаусыз</dt>
-                <dd data-col="presidio_default" style="--v:0.605">60,5%</dd>
+                <dd data-col="presidio_default" style="--v:0.632">63,2%</dd>
               </div>
               <div>
                 <dt>Presidio, орыс тілді модельмен</dt>
-                <dd data-col="presidio_ru" style="--v:0.385">38,5%</dd>
+                <dd data-col="presidio_ru" style="--v:0.370">37,0%</dd>
               </div>
             </dl>
             <p class="caveat"><strong>Ескертпе.</strong> Деректері жоқ мәтіндердің ішінде детектор бәрібір осы түрлердің бірін тапқандарының үлесі. Бұлар да сол автордың үлгілері: «ЖСН» сөзінсіз он екі цифр, тапсырыс нөмірлері, адам есімімен аталған көшелер.</p>
           </div>
         </div>
-        <p>Барлық түрлер, кесінділер және ескертпелер бар толық кестелер — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md">нәтижелер файлында</a>. Ондағы бесінші детектор — тексерусіз тұрақты өрнектер жиыны — мұнда көрсетілмеген.</p>
+        <p>Барлық түрлер, кесінділер және ескертпелер бар толық кестелер — <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-11-04_compare.md">нәтижелер файлында</a>. Ондағы бесінші детектор — тексерусіз тұрақты өрнектер жиыны — мұнда көрсетілмеген.</p>
       </div>
     </section>
 
@@ -877,6 +893,14 @@ footer p { margin-bottom: 0.6rem; }
             <p>Addresses on any domain.</p>
           </li>
           <li>
+            <h3>ID cards and passports</h3>
+            <p>The nine digits of an ID card or a residence permit, the letter and eight digits of a passport. The name of the document has to stand before the number.</p>
+          </li>
+          <li>
+            <h3>Postal addresses</h3>
+            <p>A street with a house number, an apartment or an office: in Russian, in Kazakh and in Latin letters.</p>
+          </li>
+          <li>
             <h3>Names</h3>
             <p>In Russian and Kazakh: by lists of given names, by the endings of surnames and patronymics, and by the words around them. This is the hardest type: see the numbers below.</p>
           </li>
@@ -885,7 +909,7 @@ footer p { margin-bottom: 0.6rem; }
             <p>API keys, tokens, passwords, private keys, connection strings. A request with a secret is blocked whole.</p>
           </li>
         </ul>
-        <p class="note">Not detected yet: postal addresses, document numbers, dates of birth.</p>
+        <p class="note">Not detected yet: dates of birth, and a document's number a few words after the name of the document.</p>
         <p>The detector is an open-source library, <a href="https://github.com/airlockteam/airlock-pii">airlock-pii</a> (Apache-2.0): you can read its rules and run the benchmark yourself.</p>
       </div>
     </section>
@@ -919,103 +943,103 @@ footer p { margin-bottom: 0.6rem; }
       </div>
     </section>
 
-    <section id="en-bench" aria-labelledby="en-bench-h" data-source="2026-10-18_compare.md">
+    <section id="en-bench" aria-labelledby="en-bench-h" data-source="2026-11-04_compare.md">
       <div class="wrap">
         <h2 id="en-bench-h">Benchmark: what it finds and what it misses</h2>
-        <p>The detector was run on 2,000 synthetic texts; 400 of them hold nothing to find. A figure is the share of values that a placeholder would cover whole. Run on 18 October 2026 with airlock-pii 0.1.0 and Presidio 2.2.364; the results file is <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md"><code>bench/results/2026-10-18_compare.md</code></a>. The <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">methodology</a> says how the data and the scoring work.</p>
+        <p>The detector was run on 2,000 synthetic texts; 400 of them hold nothing to find. A figure is the share of values that a placeholder would cover whole. Run on 4 November 2026 with airlock-pii 0.2.0 and Presidio 2.2.364; the results file is <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-11-04_compare.md"><code>bench/results/2026-11-04_compare.md</code></a>. The <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/METHODOLOGY.md">methodology</a> says how the data and the scoring work.</p>
         <p data-gateway-default="airlock_pii_ner">By default the gateway runs with the Russian NER: the second line of each card. One setting switches it off, and the gateway then runs on the rules alone: the first line.</p>
         <div class="metrics">
           <div class="metric" data-row="All types, under a span of any type">
             <h3>All types of data</h3>
-            <p class="n">values: 3,451</p>
+            <p class="n">values: 3,600</p>
             <dl>
               <div>
                 <dt>Airlock with the NER off</dt>
-                <dd data-col="airlock_pii" style="--v:0.922">0.922</dd>
+                <dd data-col="airlock_pii" style="--v:0.934">0.934</dd>
               </div>
               <div class="own">
                 <dt>Airlock by default: rules and the Russian NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.943">0.943</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.955">0.955</dd>
               </div>
               <div>
                 <dt>Presidio, out of the box</dt>
-                <dd data-col="presidio_default" style="--v:0.680">0.680</dd>
+                <dd data-col="presidio_default" style="--v:0.653">0.653</dd>
               </div>
               <div>
                 <dt>Presidio with a Russian model</dt>
-                <dd data-col="presidio_ru" style="--v:0.482">0.482</dd>
+                <dd data-col="presidio_ru" style="--v:0.457">0.457</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Caveat.</strong> For numbers, e-mail and secrets the result is circular: the test values and the checks that look for them come from the same library. Presidio was not tuned for Kazakhstan: it has no type for an IIN, a BIN or a secret, so it is credited with everything it covered under a span of any type.</p>
+            <p class="caveat"><strong>Caveat.</strong> For numbers, e-mail, secrets, documents and addresses the result is circular: the test values and the checks that look for them come from the same library. Presidio was not tuned for Kazakhstan: it has no type for an IIN, a BIN, a secret, a Kazakhstan document or a postal address, so it is credited with everything it covered under a span of any type.</p>
           </div>
           <div class="metric" data-row="PERSON as typed: names the library has on no list">
             <h3>Names the library has on no list</h3>
-            <p class="n">values: 181</p>
+            <p class="n">values: 202</p>
             <dl>
               <div>
                 <dt>Airlock with the NER off</dt>
-                <dd data-col="airlock_pii" style="--v:0.508">0.508</dd>
+                <dd data-col="airlock_pii" style="--v:0.545">0.545</dd>
               </div>
               <div class="own">
                 <dt>Airlock by default: rules and the Russian NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.829">0.829</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.891">0.891</dd>
               </div>
               <div>
                 <dt>Presidio, out of the box</dt>
-                <dd data-col="presidio_default" style="--v:0.591">0.591</dd>
+                <dd data-col="presidio_default" style="--v:0.609">0.609</dd>
               </div>
               <div>
                 <dt>Presidio with a Russian model</dt>
-                <dd data-col="presidio_ru" style="--v:0.652">0.652</dd>
+                <dd data-col="presidio_ru" style="--v:0.673">0.673</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Caveat.</strong> The one row for names that does not grade the library on its own lists. By default, with the NER, Airlock scores 0.829 here: more than either Presidio configuration (0.591 and 0.652). With the NER off it scores 0.508, half: less than either.</p>
+            <p class="caveat"><strong>Caveat.</strong> The one row for names that does not grade the library on its own lists. By default, with the NER, Airlock scores 0.891 here: more than either Presidio configuration (0.609 and 0.673). With the NER off it scores 0.545, just over half: less than either.</p>
           </div>
           <div class="metric" data-row="OCR-like noise: values it touched">
             <h3>Values touched by OCR-like noise</h3>
-            <p class="n">values: 161</p>
+            <p class="n">values: 149</p>
             <dl>
               <div>
                 <dt>Airlock with the NER off</dt>
-                <dd data-col="airlock_pii" style="--v:0.180">0.180</dd>
+                <dd data-col="airlock_pii" style="--v:0.235">0.235</dd>
               </div>
               <div class="own">
                 <dt>Airlock by default: rules and the Russian NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.180">0.180</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.242">0.242</dd>
               </div>
               <div>
                 <dt>Presidio, out of the box</dt>
-                <dd data-col="presidio_default" style="--v:0.099">0.099</dd>
+                <dd data-col="presidio_default" style="--v:0.107">0.107</dd>
               </div>
               <div>
                 <dt>Presidio with a Russian model</dt>
-                <dd data-col="presidio_ru" style="--v:0.093">0.093</dd>
+                <dd data-col="presidio_ru" style="--v:0.094">0.094</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Caveat.</strong> As after OCR of a scan: a zero and the letter O, a one and the letter l swapped, one space broken. No detector copes: Airlock finds fewer than one value in five.</p>
+            <p class="caveat"><strong>Caveat.</strong> As after OCR of a scan: a zero and the letter O, a one and the letter l swapped, one space broken. No detector copes: Airlock finds fewer than one value in four.</p>
           </div>
           <div class="metric" data-row="As typed: Kazakh in Latin letters">
             <h3>Kazakh in Latin letters</h3>
-            <p class="n">values: 266</p>
+            <p class="n">values: 295</p>
             <dl>
               <div>
                 <dt>Airlock with the NER off</dt>
-                <dd data-col="airlock_pii" style="--v:0.966">0.966</dd>
+                <dd data-col="airlock_pii" style="--v:0.969">0.969</dd>
               </div>
               <div class="own">
                 <dt>Airlock by default: rules and the Russian NER</dt>
-                <dd data-col="airlock_pii_ner" style="--v:0.966">0.966</dd>
+                <dd data-col="airlock_pii_ner" style="--v:0.969">0.969</dd>
               </div>
               <div>
                 <dt>Presidio, out of the box</dt>
-                <dd data-col="presidio_default" style="--v:0.500">0.500</dd>
+                <dd data-col="presidio_default" style="--v:0.471">0.471</dd>
               </div>
               <div>
                 <dt>Presidio with a Russian model</dt>
-                <dd data-col="presidio_ru" style="--v:0.248">0.248</dd>
+                <dd data-col="presidio_ru" style="--v:0.217">0.217</dd>
               </div>
             </dl>
-            <p class="caveat"><strong>Caveat.</strong> This figure flatters. The test texts were written by the author of the rules, and no native speaker has checked them. The library does not know the words “parol” and “dangyly” yet: it misses a password after the first, and reads a person's name in the name of an avenue.</p>
+            <p class="caveat"><strong>Caveat.</strong> This figure flatters. The test texts were written by the author of the rules, and no native speaker has checked them. The library does not know the word “parol” yet and misses a password after it. In “Abai dangyly” it reads a person's name when no house number follows, and sometimes even when one does.</p>
           </div>
           <div class="metric" data-row="Negatives with a false positive">
             <h3>False positives</h3>
@@ -1023,7 +1047,7 @@ footer p { margin-bottom: 0.6rem; }
             <dl>
               <div>
                 <dt>Airlock with the NER off</dt>
-                <dd data-col="airlock_pii" style="--v:0.012">1.2%</dd>
+                <dd data-col="airlock_pii" style="--v:0.015">1.5%</dd>
               </div>
               <div class="own">
                 <dt>Airlock by default: rules and the Russian NER</dt>
@@ -1031,17 +1055,17 @@ footer p { margin-bottom: 0.6rem; }
               </div>
               <div>
                 <dt>Presidio, out of the box</dt>
-                <dd data-col="presidio_default" style="--v:0.605">60.5%</dd>
+                <dd data-col="presidio_default" style="--v:0.632">63.2%</dd>
               </div>
               <div>
                 <dt>Presidio with a Russian model</dt>
-                <dd data-col="presidio_ru" style="--v:0.385">38.5%</dd>
+                <dd data-col="presidio_ru" style="--v:0.370">37.0%</dd>
               </div>
             </dl>
             <p class="caveat"><strong>Caveat.</strong> The share of texts with nothing to find in which a detector still reported one of these types. These too are templates by the same author: twelve digits without the word “IIN”, order numbers, streets named after people.</p>
           </div>
         </div>
-        <p>The full tables, with every type, the slices and the notes, are in the <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-10-18_compare.md">results file</a>. Its fifth detector, a set of regular expressions with no checks, is not shown here.</p>
+        <p>The full tables, with every type, the slices and the notes, are in the <a href="https://github.com/airlockteam/airlock-pii/blob/main/bench/results/2026-11-04_compare.md">results file</a>. Its fifth detector, a set of regular expressions with no checks, is not shown here.</p>
       </div>
     </section>
 
